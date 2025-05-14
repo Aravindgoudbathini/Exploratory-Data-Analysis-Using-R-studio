@@ -1,0 +1,358 @@
+---
+title: "BIS581"
+output:
+  word_document: default
+  html_notebook: default
+---
+STUDENT NAME: Aravind goud bathini
+FALL 2024
+
+THE WORK YOU SUBMIT MUST BE YOUR OWN!
+BIS 581 Final project. You have three data sets, one for the central region, one for eastern, and one for the western region.  You may need to edit the code below for the path to the files.
+
+```{r}
+
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+#load from CSV/txt
+centralData <- read.csv("Orders_Central.csv", header=TRUE)
+westData <- read.csv("orders_west.csv", header=TRUE)
+eastData <- read.delim("Orders_East.txt", header=TRUE, sep='\t')
+```
+For this assignment, answer the following questions, but please note: the data may or may not be setup such that you can just answer. You may need to perform some "data wrangling" before you can answer. Include the code you use for any wrangling/EDA in your submission. Also include the code you use to answer each question along with text indicating what the answer is. You must provide proof of your answer by showing your R code. You may use online resources and talk to others, but what you submit must be your own work.
+TO SUBMIT: Your RMD file, the Word doc output from KNITTING your RMD, grad students: your powerpoint
+#data wrangling in centraldata 
+#Adding column for Order.Date in centralData.
+```{r}
+centralData <- centralData %>% unite("Order.Date",Order.Year, Order.Month,Order.Day, sep = "-")
+#Adding column for Ship.Date in centralData.
+centralData <- centralData %>% unite("Ship.Date", Ship.Year, Ship.Month, Ship.Day,sep = "-")
+#Renaming product and discount column in centralData . 
+names(centralData)[14] <- "Product.Name"
+names(centralData)[20]<- "Discount"
+```
+```{r}
+glimpse(centralData)
+```
+
+#Adding region column in centraldata.
+```{r}
+centralData$Region <- "Central"
+```
+
+
+#Formatting Order.date and Ship.Date in centralData
+```{r}
+centralData$Order.Date <- as.Date(centralData$Order.Date,format ="%Y-%m-%d")
+centralData$Ship.Date <- as.Date(centralData$Ship.Date,format = "%Y-%m-%d")
+```
+# Convert  columns to a factor
+```{r}
+centralData$Ship.Mode <- as.factor(centralData$Ship.Mode)
+centralData$Segment <- as.factor(centralData$Segment)
+centralData$Sales <- as.double(centralData$Sales)
+centralData$Discount <- as.double(centralData$Discount)
+centralData$Country <- as.factor(centralData$Country)
+centralData$City <- as.factor(centralData$City)
+centralData$State <- as.factor(centralData$State)
+centralData$Category <- as.factor(centralData$Category)
+centralData$Sub.Category <- as.factor(centralData$Sub.Category)
+
+```
+
+#data wrangling in Eastdata
+
+
+
+```{r}
+summary(eastData)
+```
+
+
+```{r}
+glimpse(eastData)
+```
+#Formatting Order.date and Ship.Date in EastData
+```{r}
+eastData$Order.Date <- as.Date(eastData$Order.Date, format = "%m/%d/%Y")
+eastData$Ship.Date <- as.Date(eastData$Ship.Date, format = "%m/%d/%Y")
+```
+#Changes in EastData Sales Format
+```{r}
+eastData <- eastData %>%
+  mutate(Sales = as.numeric(gsub("USD", "", Sales)))
+```
+# Convert  columns to a factor
+```{r}
+eastData$Ship.Mode <- as.factor(eastData$Ship.Mode)
+eastData$Customer.Name <- as.factor(eastData$Customer.Name)
+eastData$Segment <- as.factor(eastData$Segment)
+eastData$Country <- as.factor(eastData$Country)
+eastData$State <- as.factor(eastData$State)
+eastData$City <- as.factor(eastData$City)
+eastData$Region <- as.factor(eastData$Region)
+eastData$Product.ID <- as.factor(eastData$Product.ID)
+eastData$Category <- as.factor(eastData$Category)
+eastData$Sub.Category <- as.factor(eastData$Sub.Category)
+
+```
+#Data wrangling in WestData
+
+```{r}
+westData <- westData %>%
+  rename(STtate = Right_State2) 
+```
+```{r}
+duplicatecolumns <- c("Right_Order.Date", "Right_Ship.Date", "Right_Ship.Mode", 
+                       "Right_Customer.ID", "Right_Customer.Name", "Right_Segment", 
+                       "Right_Country", "Right_City", "Right_Postal.Code", 
+                       "Right_Region", "Right_Product.ID", "Right_Category", 
+                       "Right_Sub.Category", "Right_Product.Name", "Right_Sales", 
+                       "Right_Quantity", "Right_Discount", "Right_Profit",
+                       "Right_Row.ID","State")
+```
+
+
+```{r}
+westData <- westData[, !(names(westData) %in% duplicatecolumns)]
+```
+```{r}
+westData <- westData %>%
+  rename( State = STtate)
+```
+```{r}
+ 
+```
+
+```{r}
+identical(westData$Customer.ID, westData$Right_Customer.ID)
+```
+
+
+
+
+#Formatting Order.date and Ship.Date in westData
+
+
+```{r}
+westData$Order.Date<- as.Date(westData$Order.Date)
+westData$Ship.Date<- as.Date(westData$Ship.Date)
+```
+
+# Convert  columns to a factor
+```{r}
+westData$Ship.Mode <- as.factor(westData$Ship.Mode)
+westData$Customer.Name <- as.factor(westData$Customer.Name)
+westData$Segment <- as.factor(westData$Segment)
+westData$Country <- as.factor(westData$Country)
+westData$State <- as.factor(westData$State)
+westData$City <- as.factor(westData$City)
+westData$Region <- as.factor(westData$Region)
+westData$Product.ID <- as.factor(westData$Product.ID)
+westData$Category <- as.factor(westData$Category)
+westData$Sub.Category <- as.factor(westData$Sub.Category)
+
+```
+
+
+```{r}
+glimpse(westData)
+```
+
+
+#intersecting colnames in three datafiles.
+```{r}
+Column.names<-intersect(intersect(colnames(centralData),colnames(eastData)),colnames(westData))
+```
+#Merging three datafiles.
+```{r}
+centralData <- select(centralData, Column.names)
+eastData <- select(eastData, Column.names)
+westData <- select(westData, Column.names)
+Final.Data <- rbind(centralData,westData,eastData)
+```
+```{r}
+glimpse(Final.Data)
+```
+#Adding Shipping.Period column to Final.Data
+```{r}
+Final.Data$Shipping.Period <- Final.Data$Ship.Date -Final.Data$Order.Date
+```
+```{r}
+summary(Final.Data)
+```
+```{r}
+Final.Data <- Final.Data %>% drop_na()
+```
+
+----All Students----
+1)which region, on average, ships products fastest:
+#First we need to caluculate  average shipping period:
+```{r}
+avg_shipping_time <- Final.Data %>%
+  group_by(Region) %>%
+  summarize(Average_Shipping_Period = mean(Shipping.Period, na.rm = TRUE))
+avg_shipping_time
+```
+```{r}
+fastest_region <- avg_shipping_time %>%
+  filter(Average_Shipping_Period == min(Average_Shipping_Period))
+fastest_region
+```
+#so the Fastest region which ships the product is West with average of 3.90 days 
+
+2)Which product categories ship slowest by region:
+
+```{r}
+slow_shipping_categories <- Final.Data %>%
+  group_by(Region, Category) %>%
+  summarize(Average_Shipping_Period = mean(Shipping.Period, na.rm = TRUE)) %>%
+  arrange(desc(Average_Shipping_Period)) %>%
+  group_by(Region) %>%
+  slice_max(Average_Shipping_Period, n = 1) # Select the slowest category in each region
+
+slow_shipping_categories
+```
+#The product category that ships the slowest by region is as follows:  Office Supplies in the Central at an average of 4.05 days, Technology at an average of 3.98 days in the West region, and Office Supplies in the East at an average of 3.93 days. It seems that the most common category is Office Supplies, and it took the longest to ship in the Central region.
+
+
+
+3)In each region, which ship mode is used most frequently
+```{r}
+most_frequent_ship_mode <- Final.Data %>%
+  group_by(Region, Ship.Mode) %>%
+  summarize(Frequency = n(), .groups = "drop") %>%
+  arrange(desc(Frequency)) %>%
+  group_by(Region) %>%
+  slice_max(Frequency, n = 1)
+most_frequent_ship_mode
+
+```
+#The most frequently used ship mode in each region is as follows:In the Central region, the most frequently used ship mode is Standard Class with a frequency of 908 shipments.In the West region, the most frequently used ship mode is Standard Class with a frequency of 5552 shipments.In the East region, the most frequently used ship mode is Standard Class with a frequency of 1639 shipments.
+
+4)Plot time to ship by category, by year.
+```{r}
+# Extract year from Order.Date
+Final.Data <- Final.Data %>%
+  mutate(Year = lubridate::year(Order.Date))
+
+# Summarize average shipping time by category and year
+shipping_summary <- Final.Data %>%
+  group_by(Year, Category) %>%
+  summarize(Average_Shipping_Period = mean(Shipping.Period, na.rm = TRUE), .groups = "drop")
+
+```
+
+```{r}
+# Line chart
+ggplot(shipping_summary, aes(x = Year, y = Average_Shipping_Period, group = Category, color = Category)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(
+    title = "Trend of Shipping Period by Category and Year",
+    x = "Year",
+    y = "Average Shipping Period (Days)",
+    color = "Category"
+  ) +
+  theme_minimal()
+
+
+```
+# Key Observations:
+
+# Technology:
+# - Starts with the highest average shipping period in 2015 at about ~4.2 days.
+# - Increase in delivery time, which was maximum in the year 2017.
+# - Declined sharply in the year 2018.
+
+# Office Supplies:
+# - Maintains relatively stable shipping times of around 4.0 days across the years.
+# - Slight fluctuations are witnessed, peaking in the year 2017 and then decreasing in 2018.
+
+# Furniture:
+# - Starting with the shortest shipping time (~3.8 days) in the year 2015.
+# - Demonstrates an overall increase in shipping time up to the year 2017.
+# - Very nicely decreased in 2018.
+
+# Conclusion:
+# - Notice that all three categories reach their peak in 2017, which can suggest some
+#   sort of systemic problem or perhaps an external factor affecting the efficiency
+#   of delivery that year.
+# - This dramatic rise across the board in 2018 may indicate very significant changes
+#   in logistics or operational processes.
+
+-----Grads only-----
+5)which categories have highest profit by region, chain-wide?
+```{r}
+# Calculate total profit by region and category
+highest_profit_categories <- Final.Data %>%
+  group_by(Region, Category) %>%
+  summarize(Total_Profit = sum(Profit, na.rm = TRUE), .groups = "drop") %>%
+  arrange(desc(Total_Profit)) %>%
+  group_by(Region) %>%
+  slice_max(Total_Profit, n = 1)
+
+highest_profit_categories
+
+
+```
+#The analysis identifies the most profitable product categories in each region across the chain. In the Central region, the category with the highest profit is Technology with a total of $33,697.43. For the West region, Office Supplies leads with a profit of $168,043.59. In the East region, Technology again emerges as the most profitable category with $45,248.38. 
+
+6)which segments have the lowest profit by region?
+```{r}
+lowestProfitsegments <- Final.Data %>%
+  na.omit() %>%
+  group_by(Region, Segment) %>%
+  summarise(TotalProfit = sum(Profit, na.rm = TRUE)) %>%
+  arrange(Region, TotalProfit) %>%
+  slice_head(n = 1) 
+
+lowestProfitsegments
+```
+#The Central Region reflects a loss with a negative profit of $ - 25,645.45.The East region contributed a profit of 21,183.40 stemming from the Corporate segment.The Home Office part gives the most yielding profit of 33,761.17 in the West region.Conclusion: There are regional differences in profits that vary between regions and customers, especially poor performance in the Central region.
+7)In each region, which ship mode is used most frequently for the top 5 most expensive orders?
+
+```{r}
+most_frequent_ship_mode<- Final.Data %>%
+  group_by(Region) %>%
+  arrange(Region, desc(Sales)) %>%
+  slice_head(n = 5) %>%
+  count(Region, Ship.Mode, sort = TRUE) %>%
+  slice_head(n=1)
+
+print(most_frequent_ship_mode)
+```
+
+#The analysis reveals that the Standard Class shipping mode is the most frequently used for the top 5 most expensive orders in all regions:Central Region: Standard Class was used for 3 orders.West Region: First Class was used for 3 orders.East Region: Standard Class was used for 4 orders.
+
+
+8)What are yearly sales by region?
+
+```{r}
+yearly_Sales <- Final.Data %>%
+  mutate(Year = as.integer(format(as.Date(Order.Date), "%Y"))) %>%
+  group_by(Region, Year) %>%
+  summarise(TotalSales = sum(Sales, na.rm = TRUE))
+
+print(yearly_Sales)
+```
+#This represents the total of sales for each year across regions: the West is always on top, having grown smoothly within the period starting from 2016 to 2018; the East saw moderate growth, while the Central region has the poorest sale, yet slightly improving.
+
+
+
+
+9)What is the average amount spent per customer by region?
+
+```{r}
+avgamountper_customer <- Final.Data %>%
+  group_by(Region, Customer.ID) %>%
+  summarise(CSales = sum(Sales, na.rm = TRUE)) %>%
+  group_by(Region) %>%
+  summarise(Average = mean(CSales, na.rm = TRUE))
+
+print(avgamountper_customer)
+```
+#The West has the highest average sales (3137.77), followed by the East (989.68). The Central region has the lowest average sales (509.05).
+
+
